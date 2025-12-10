@@ -28,6 +28,7 @@ export interface Resource {
   updatedAt: string
   parentId?: string
   version?: string
+  externalLink?: string
 }
 
 export interface ResourcePayload {
@@ -39,7 +40,8 @@ export interface ResourcePayload {
   protocol?: string
   scenario?: string
   tags?: string
-  file: File
+  file?: File
+  externalLink?: string
   parentId?: string
   version?: string
 }

@@ -28,16 +28,17 @@ func NewResourceHandler(db *gorm.DB, cfg config.Config) *ResourceHandler {
 }
 
 type resourceCreateReq struct {
-	Title       string `form:"title" binding:"required"`
-	Description string `form:"description"`
-	Type        string `form:"type" binding:"required"`
-	Vendor      string `form:"vendor"`
-	DeviceModel string `form:"deviceModel"`
-	Protocol    string `form:"protocol"`
-	Scenario    string `form:"scenario"`
-	Tags        string `form:"tags"`
-	ParentID    string `form:"parentId"` // Optional
-	Version     string `form:"version"`  // Optional, default 1.0
+	Title        string `form:"title" binding:"required"`
+	Description  string `form:"description"`
+	Type         string `form:"type" binding:"required"`
+	Vendor       string `form:"vendor"`
+	DeviceModel  string `form:"deviceModel"`
+	Protocol     string `form:"protocol"`
+	Scenario     string `form:"scenario"`
+	Tags         string `form:"tags"`
+	ParentID     string `form:"parentId"`     // Optional
+	Version      string `form:"version"`      // Optional, default 1.0
+	ExternalLink string `form:"externalLink"` // Optional
 }
 
 // Create handles multipart upload, stores file locally, and records resource metadata.
@@ -54,54 +55,63 @@ func (h *ResourceHandler) Create(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "file is required"})
-		return
-	}
+	var diskPath, fileName, contentType, fileHash string
 
-	// 1. Format Check (Simple extension check)
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	allowedExts := map[string]bool{
-		".pdf": true, ".docx": true, ".doc": true, ".txt": true, ".md": true,
-		".zip": true, ".rar": true, ".7z": true,
-		".pcap": true, ".pcapng": true, ".gns3": true, ".pkt": true,
-		".mp4": true,
-	}
-	if !allowedExts[ext] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported file format"})
-		return
-	}
+	if req.ExternalLink != "" {
+		// If external link is provided, we skip file upload checks
+		// We can add basic URL validation here if needed
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "file or external link is required"})
+			return
+		}
 
-	// 2. Duplicate Check (Calculate Hash)
-	src, err := file.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open file"})
-		return
-	}
-	defer src.Close()
+		// 1. Format Check (Simple extension check)
+		ext := strings.ToLower(filepath.Ext(file.Filename))
+		allowedExts := map[string]bool{
+			".pdf": true, ".docx": true, ".doc": true, ".txt": true, ".md": true,
+			".zip": true, ".rar": true, ".7z": true,
+			".pcap": true, ".pcapng": true, ".gns3": true, ".pkt": true,
+			".mp4": true,
+		}
+		if !allowedExts[ext] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported file format"})
+			return
+		}
 
-	hash := sha256.New()
-	if _, err := io.Copy(hash, src); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to calculate hash"})
-		return
-	}
-	fileHash := hex.EncodeToString(hash.Sum(nil))
+		// 2. Duplicate Check (Calculate Hash)
+		src, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to open file"})
+			return
+		}
+		defer src.Close()
 
-	// Reset file pointer for saving
-	src.Seek(0, 0)
+		hash := sha256.New()
+		if _, err := io.Copy(hash, src); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to calculate hash"})
+			return
+		}
+		fileHash = hex.EncodeToString(hash.Sum(nil))
 
-	var existing models.Resource
-	if err := h.db.Where("file_hash = ?", fileHash).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "duplicate resource detected", "resourceId": existing.ID})
-		return
-	}
+		// Reset file pointer for saving
+		src.Seek(0, 0)
 
-	safeName := fmt.Sprintf("%s%s", uuid.NewString(), ext)
-	diskPath := filepath.Join(h.cfg.UploadDir, safeName)
-	if err := c.SaveUploadedFile(file, diskPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
-		return
+		var existing models.Resource
+		if err := h.db.Where("file_hash = ?", fileHash).First(&existing).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "duplicate resource detected", "resourceId": existing.ID})
+			return
+		}
+
+		safeName := fmt.Sprintf("%s%s", uuid.NewString(), ext)
+		diskPath = filepath.Join(h.cfg.UploadDir, safeName)
+		if err := c.SaveUploadedFile(file, diskPath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+			return
+		}
+		fileName = file.Filename
+		contentType = file.Header.Get("Content-Type")
 	}
 
 	var parentID *uuid.UUID
@@ -117,22 +127,23 @@ func (h *ResourceHandler) Create(c *gin.Context) {
 	}
 
 	resource := models.Resource{
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        req.Type,
-		Vendor:      req.Vendor,
-		DeviceModel: req.DeviceModel,
-		Protocol:    req.Protocol,
-		Scenario:    req.Scenario,
-		Tags:        req.Tags,
-		FilePath:    diskPath,
-		FileName:    file.Filename,
-		ContentType: file.Header.Get("Content-Type"),
-		FileHash:    fileHash,
-		Status:      "pending", // Default to pending for audit
-		UploaderID:  userID,
-		ParentID:    parentID,
-		Version:     version,
+		Title:        req.Title,
+		Description:  req.Description,
+		Type:         req.Type,
+		Vendor:       req.Vendor,
+		DeviceModel:  req.DeviceModel,
+		Protocol:     req.Protocol,
+		Scenario:     req.Scenario,
+		Tags:         req.Tags,
+		FilePath:     diskPath,
+		FileName:     fileName,
+		ContentType:  contentType,
+		FileHash:     fileHash,
+		ExternalLink: req.ExternalLink,
+		Status:       "pending", // Default to pending for audit
+		UploaderID:   userID,
+		ParentID:     parentID,
+		Version:      version,
 	}
 
 	if err := h.db.Create(&resource).Error; err != nil {

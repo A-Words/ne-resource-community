@@ -22,6 +22,7 @@ type Resource struct {
 	FileName      string     `gorm:"size:255" json:"fileName"`
 	ContentType   string     `gorm:"size:128" json:"contentType"`
 	FileHash      string     `gorm:"size:64;index" json:"fileHash"`         // SHA256
+	ExternalLink  string     `gorm:"size:512" json:"externalLink"`          // Optional external link
 	Status        string     `gorm:"size:32;default:pending" json:"status"` // pending, approved, rejected
 	RejectReason  string     `gorm:"size:255" json:"rejectReason"`
 	DownloadCount int64      `gorm:"default:0" json:"downloadCount"`

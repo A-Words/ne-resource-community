@@ -22,7 +22,9 @@
             <el-descriptions-item label="下载">{{ resource.downloadCount }}</el-descriptions-item>
           </el-descriptions>
           <div class="actions-row">
-            <el-button type="primary" @click="download">下载</el-button>
+            <el-button type="primary" @click="download">
+              {{ resource.externalLink ? '访问链接' : '下载' }}
+            </el-button>
             <el-button @click="toggleFav">收藏</el-button>
             <el-button type="danger" link @click="showReport = true">举报</el-button>
             <el-button v-if="isUploader" type="warning" link @click="goUpdate">更新版本</el-button>
@@ -126,6 +128,12 @@ async function loadRecommend(id: string) {
 
 async function download() {
   if (!resource.value) return
+  
+  if (resource.value.externalLink) {
+    window.open(resource.value.externalLink, '_blank')
+    return
+  }
+
   try {
     await downloadResource(resource.value.id)
     ElMessage.success('开始下载')

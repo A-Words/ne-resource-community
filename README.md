@@ -8,11 +8,12 @@
 - 文件存储：本地磁盘 `server/uploads`（无病毒扫描，按需求可后续接入）
 
 ## 核心功能
-- 结构化资源库：工具 / 配置模板 / 文档资料 / 学习资源分类
-- 智能检索：多条件筛选 + PostgreSQL 全文检索 + 相似资源推荐
-- 贡献与互动：用户上传、评分与评论、下载统计、积分占位
-- 质量控制占位：支持去重/审核流程扩展（当前未启用病毒扫描）
-- 个人空间占位：收藏、下载历史、进度/贡献统计可扩展
+- 结构化资源库：四大核心分类（网络工具、配置模板、文档资料、学习资源），支持针对性筛选。
+- 灵活存储：支持本地文件上传与外部直链（External Link）两种资源形态，节省存储空间。
+- 智能检索：多条件筛选 + PostgreSQL 全文检索 + 相似资源推荐。
+- 贡献与互动：用户上传、评分与评论、下载统计、收藏功能。
+- 质量控制：支持文件哈希去重，管理员审核流程（Pending/Approved）。
+- 个人空间：收藏列表、下载历史、我的上传管理。
 
 ## 目录结构
 - `server/`：Gin API、GORM 模型、JWT 鉴权、文件上传与静态服务
@@ -52,6 +53,13 @@ npm run dev  # 默认 5173，已代理 /api 与 /uploads 到 8080
 ```
 生产构建：`npm run build`
 
+### 管理员工具
+项目包含一个 CLI 工具用于将现有用户提升为管理员：
+```bash
+cd server
+go run cmd/promote_admin/main.go -email user@example.com
+```
+
 ## API 概览（简要）
 - `GET /api/health` 健康检查
 - `POST /api/auth/register` 注册；`POST /api/auth/login` 登录（返回 JWT）
@@ -66,7 +74,5 @@ npm run dev  # 默认 5173，已代理 /api 与 /uploads 到 8080
 `resources.search_vector` 为生成列，基于 `title/description/tags`，建有 GIN 索引用于 `websearch_to_tsquery`；无需额外扩展插件。
 
 ## 后续可扩展点
-- 加入文件类型/大小限制、MD5 去重、审核流与管理员角色
-- 收藏/下载历史接口与个人空间展示
 - 更细的推荐策略（标签/协议/厂商综合）
 - 对接对象存储或 CDN，接入病毒扫描（如 ClamAV）

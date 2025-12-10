@@ -14,24 +14,29 @@
     </div>
 
     <el-card shadow="never" class="panel">
-      <el-form inline :model="filters" label-width="100px" class="filters">
-        <el-form-item label="类型">
-          <el-select v-model="filters.type" placeholder="全部" clearable>
-            <el-option v-for="opt in types" :key="opt" :label="opt" :value="opt" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="厂商">
-          <el-input v-model="filters.vendor" placeholder="如 Cisco / Huawei" clearable />
-        </el-form-item>
-        <el-form-item label="设备型号">
-          <el-input v-model="filters.device" placeholder="如 AR / ASR" clearable />
-        </el-form-item>
-        <el-form-item label="协议">
-          <el-input v-model="filters.protocol" placeholder="BGP / OSPF / VXLAN" clearable />
-        </el-form-item>
-        <el-form-item label="场景">
-          <el-input v-model="filters.scenario" placeholder="数据中心 / 骨干" clearable />
-        </el-form-item>
+      <el-tabs v-model="filters.type" @tab-change="load" class="type-tabs">
+        <el-tab-pane label="全部资源" name="" />
+        <el-tab-pane label="网络工具" name="网络工具" />
+        <el-tab-pane label="配置模板" name="配置模板" />
+        <el-tab-pane label="文档资料" name="文档资料" />
+        <el-tab-pane label="学习资源" name="学习资源" />
+      </el-tabs>
+
+      <el-form inline :model="filters" label-width="80px" class="filters">
+        <template v-if="filters.type !== '网络工具'">
+          <el-form-item label="厂商">
+            <el-input v-model="filters.vendor" placeholder="如 Cisco / Huawei" clearable />
+          </el-form-item>
+          <el-form-item label="设备型号">
+            <el-input v-model="filters.device" placeholder="如 AR / ASR" clearable />
+          </el-form-item>
+          <el-form-item label="协议">
+            <el-input v-model="filters.protocol" placeholder="BGP / OSPF / VXLAN" clearable />
+          </el-form-item>
+          <el-form-item label="场景">
+            <el-input v-model="filters.scenario" placeholder="数据中心 / 骨干" clearable />
+          </el-form-item>
+        </template>
         <el-form-item>
           <el-button type="primary" @click="load">筛选</el-button>
           <el-button @click="reset">重置</el-button>
@@ -72,7 +77,6 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const resources = ref<Resource[]>([])
-const types = ['工具', '配置模板', '文档资料', '学习资源']
 
 const filters = reactive({
   search: '',
@@ -105,6 +109,10 @@ onMounted(load)
 </script>
 
 <style scoped>
+.type-tabs {
+  margin-bottom: 16px;
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1fr 320px;
