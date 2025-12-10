@@ -1,0 +1,13 @@
+# Node
+web/node_modules
+web/dist
+web/.vite
+
+# Go
+server/bin
+server/tmp
+server/uploads
+
+# IDE
+.vscode
+.DS_Store
