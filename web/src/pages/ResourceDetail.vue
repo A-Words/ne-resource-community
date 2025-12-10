@@ -11,6 +11,7 @@
           <div class="title-row">
             <h2>{{ resource.title }}</h2>
             <el-tag type="info">{{ resource.type }}</el-tag>
+            <el-tag type="success" effect="plain">v{{ resource.version || '1.0' }}</el-tag>
           </div>
           <p class="muted">{{ resource.vendor }} {{ resource.deviceModel }}</p>
           <p>{{ resource.description }}</p>
@@ -20,7 +21,28 @@
             <el-descriptions-item label="标签">{{ resource.tags || '-' }}</el-descriptions-item>
             <el-descriptions-item label="下载">{{ resource.downloadCount }}</el-descriptions-item>
           </el-descriptions>
-          <el-button type="primary" @click="download">下载</el-button>
+          <div class="actions-row">
+            <el-button type="primary" @click="download">下载</el-button>
+            <el-button @click="toggleFav">收藏</el-button>
+            <el-button type="danger" link @click="showReport = true">举报</el-button>
+            <el-button v-if="isUploader" type="warning" link @click="goUpdate">更新版本</el-button>
+          </div>
+        </el-card>
+
+        <el-card shadow="never" style="margin-top: 12px" v-if="versions.length > 1">
+          <h3>版本历史</h3>
+          <el-table :data="versions" size="small">
+            <el-table-column prop="version" label="版本" width="80" />
+            <el-table-column prop="createdAt" label="时间">
+              <template #default="scope">{{ new Date(scope.row.createdAt).toLocaleDateString() }}</template>
+            </el-table-column>
+            <el-table-column label="操作">
+              <template #default="scope">
+                <el-button link type="primary" @click="go(scope.row.id)" v-if="scope.row.id !== resource.id">查看</el-button>
+                <span v-else>当前</span>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-card>
 
         <el-card shadow="never" style="margin-top: 12px">
@@ -49,27 +71,51 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <el-dialog v-model="showReport" title="举报资源" width="30%">
+      <el-input v-model="reportReason" type="textarea" placeholder="请输入举报原因（如：内容错误、侵权、病毒等）" />
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="showReport = false">取消</el-button>
+          <el-button type="primary" @click="submitReport">提交</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
-import { fetchResource, fetchRecommendations, downloadResource, submitReview } from '@/api'
+import { onMounted, reactive, ref, watch, computed } from 'vue'
+import { fetchResource, fetchRecommendations, downloadResource, submitReview, toggleFavorite, reportResource, fetchVersions } from '@/api'
 import type { Resource } from '@/types'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 const resource = ref<Resource | null>(null)
 const recommendations = ref<Resource[]>([])
+const versions = ref<Resource[]>([])
 const loadingRecommend = ref(false)
 const review = reactive({ score: 4, comment: '' })
+const showReport = ref(false)
+const reportReason = ref('')
+
+const isUploader = computed(() => {
+  return resource.value && userStore.profile && resource.value.uploaderId === userStore.profile.id
+})
 
 async function load() {
   const id = route.params.id as string
   resource.value = await fetchResource(id)
   loadRecommend(id)
+  loadVersions(id)
+}
+
+async function loadVersions(id: string) {
+  versions.value = await fetchVersions(id)
 }
 
 async function loadRecommend(id: string) {
@@ -88,6 +134,16 @@ async function download() {
   }
 }
 
+async function toggleFav() {
+  if (!resource.value) return
+  try {
+    const res = await toggleFavorite(resource.value.id)
+    ElMessage.success(res.status === 'added' ? '已收藏' : '已取消收藏')
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.error || '操作失败')
+  }
+}
+
 async function submitReview() {
   if (!resource.value) return
   try {
@@ -98,13 +154,48 @@ async function submitReview() {
   }
 }
 
+async function submitReport() {
+  if (!resource.value) return
+  if (!reportReason.value) {
+    ElMessage.warning('请输入原因')
+    return
+  }
+  try {
+    await reportResource(resource.value.id, reportReason.value)
+    ElMessage.success('举报已提交')
+    showReport.value = false
+    reportReason.value = ''
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.error || '提交失败')
+  }
+}
+
 function go(id: string) {
   router.push(`/resources/${id}`)
 }
 
+function goUpdate() {
+  if (!resource.value) return
+  router.push({
+    path: '/upload',
+    query: {
+      parentId: resource.value.id,
+      title: resource.value.title,
+      type: resource.value.type,
+      vendor: resource.value.vendor,
+      deviceModel: resource.value.deviceModel,
+      protocol: resource.value.protocol,
+      scenario: resource.value.scenario,
+      tags: resource.value.tags,
+    }
+  })
+}
+
 watch(
   () => route.params.id,
-  () => load(),
+  (newId) => {
+    if (newId) load()
+  }
 )
 
 onMounted(load)
@@ -114,6 +205,11 @@ onMounted(load)
 .title-row {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+.actions-row {
+  margin-top: 16px;
+  display: flex;
   gap: 12px;
 }
 .meta {

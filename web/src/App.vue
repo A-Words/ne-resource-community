@@ -6,6 +6,10 @@
         <RouterLink to="/">资源广场</RouterLink>
         <RouterLink to="/upload">上传资源</RouterLink>
         <RouterLink to="/dashboard">个人空间</RouterLink>
+        <template v-if="userStore.profile?.role === 'admin'">
+          <RouterLink to="/admin/audit">审核后台</RouterLink>
+          <RouterLink to="/admin/reports">举报处理</RouterLink>
+        </template>
       </div>
       <div class="user-area">
         <el-button v-if="!userStore.isAuthed" type="primary" @click="router.push('/auth')">登录 / 注册</el-button>

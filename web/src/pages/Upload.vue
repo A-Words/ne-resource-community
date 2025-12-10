@@ -1,11 +1,14 @@
 <template>
   <div class="page-shell">
     <el-card shadow="never">
-      <h2>上传资源</h2>
+      <h2>{{ isUpdate ? '更新资源版本' : '上传新资源' }}</h2>
       <p class="muted">文件将存储在服务器本地磁盘，审核后对外展示。</p>
       <el-form :model="form" label-width="120px" class="upload-form">
         <el-form-item label="标题">
           <el-input v-model="form.title" placeholder="如 GNS3 实验拓扑" />
+        </el-form-item>
+        <el-form-item label="版本号" v-if="isUpdate">
+          <el-input v-model="form.version" placeholder="如 1.1, 2.0" />
         </el-form-item>
         <el-form-item label="类型">
           <el-select v-model="form.type" placeholder="选择类型">
@@ -46,10 +49,13 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { uploadResource } from '@/api'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
+const route = useRoute()
 const types = ['工具', '配置模板', '文档资料', '学习资源']
 const submitting = ref(false)
 
@@ -62,7 +68,25 @@ const form = reactive({
   scenario: '',
   tags: '',
   description: '',
+  version: '1.0',
+  parentId: '',
   file: null as File | null,
+})
+
+const isUpdate = computed(() => !!form.parentId)
+
+onMounted(() => {
+  if (route.query.parentId) {
+    form.parentId = route.query.parentId as string
+    form.title = route.query.title as string
+    form.type = route.query.type as string
+    form.vendor = route.query.vendor as string
+    form.deviceModel = route.query.deviceModel as string
+    form.protocol = route.query.protocol as string
+    form.scenario = route.query.scenario as string
+    form.tags = route.query.tags as string
+    form.version = '1.1' // Default increment suggestion
+  }
 })
 
 function onFileChange(file: any) {
@@ -85,9 +109,12 @@ async function submit() {
       scenario: form.scenario,
       tags: form.tags,
       description: form.description,
+      version: form.version,
+      parentId: form.parentId,
       file: form.file,
     })
     ElMessage.success('提交成功，等待审核/发布')
+    router.push('/')
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.error || '提交失败')
   } finally {

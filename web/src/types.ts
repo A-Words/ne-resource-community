@@ -26,6 +26,8 @@ export interface Resource {
   uploader?: UserProfile
   createdAt: string
   updatedAt: string
+  parentId?: string
+  version?: string
 }
 
 export interface ResourcePayload {
@@ -38,6 +40,8 @@ export interface ResourcePayload {
   scenario?: string
   tags?: string
   file: File
+  parentId?: string
+  version?: string
 }
 
 export interface ReviewPayload {

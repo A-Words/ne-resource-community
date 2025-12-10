@@ -12,8 +12,32 @@
       </el-col>
       <el-col :md="16" :xs="24">
         <el-card shadow="never">
-          <h4>收藏与下载历史</h4>
-          <el-empty description="功能占位，待后端接口完善" />
+          <el-tabs v-model="activeTab">
+            <el-tab-pane label="我的收藏" name="favorites">
+              <el-empty v-if="favorites.length === 0" description="暂无收藏" />
+              <el-table v-else :data="favorites" style="width: 100%">
+                <el-table-column prop="title" label="标题" />
+                <el-table-column prop="type" label="类型" width="100" />
+                <el-table-column label="操作" width="100">
+                  <template #default="scope">
+                    <el-button link type="primary" @click="goDetail(scope.row.id)">查看</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-tab-pane>
+            <el-tab-pane label="下载历史" name="downloads">
+              <el-empty v-if="downloads.length === 0" description="暂无下载记录" />
+              <el-table v-else :data="downloads" style="width: 100%">
+                <el-table-column prop="title" label="标题" />
+                <el-table-column prop="type" label="类型" width="100" />
+                <el-table-column label="操作" width="100">
+                  <template #default="scope">
+                    <el-button link type="primary" @click="goDetail(scope.row.id)">查看</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-tab-pane>
+          </el-tabs>
         </el-card>
       </el-col>
     </el-row>
@@ -21,11 +45,29 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
+import { fetchFavorites, fetchDownloads } from '@/api'
+import type { Resource } from '@/types'
+import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const { profile } = storeToRefs(userStore)
+const router = useRouter()
+
+const activeTab = ref('favorites')
+const favorites = ref<Resource[]>([])
+const downloads = ref<Resource[]>([])
+
+onMounted(async () => {
+  favorites.value = await fetchFavorites()
+  downloads.value = await fetchDownloads()
+})
+
+function goDetail(id: string) {
+  router.push(`/resource/${id}`)
+}
 </script>
 
 <style scoped>

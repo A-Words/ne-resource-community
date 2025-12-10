@@ -29,6 +29,11 @@ export async function fetchRecommendations(id: string): Promise<Resource[]> {
   return data
 }
 
+export async function fetchVersions(id: string): Promise<Resource[]> {
+  const { data } = await api.get<Resource[]>(`/resources/${id}/versions`)
+  return data
+}
+
 export async function uploadResource(payload: ResourcePayload): Promise<Resource> {
   const form = new FormData()
   Object.entries(payload).forEach(([key, value]) => {
@@ -65,4 +70,41 @@ export async function register(
 ): Promise<{ token: string; user: UserProfile }> {
   const { data } = await api.post('/auth/register', { email, password, displayName })
   return data
+}
+
+export async function toggleFavorite(id: string): Promise<{ status: string }> {
+  const { data } = await api.post(`/resources/${id}/favorite`)
+  return data
+}
+
+export async function fetchFavorites(): Promise<Resource[]> {
+  const { data } = await api.get<Resource[]>('/user/favorites')
+  return data
+}
+
+export async function fetchDownloads(): Promise<Resource[]> {
+  const { data } = await api.get<Resource[]>('/user/downloads')
+  return data
+}
+
+export async function reportResource(id: string, reason: string) {
+  await api.post(`/resources/${id}/report`, { reason })
+}
+
+export async function fetchPendingResources(): Promise<Resource[]> {
+  const { data } = await api.get<Resource[]>('/admin/pending')
+  return data
+}
+
+export async function auditResource(id: string, action: 'approve' | 'reject', reason?: string) {
+  await api.post(`/admin/resources/${id}/audit`, { action, reason })
+}
+
+export async function fetchReports(): Promise<any[]> {
+  const { data } = await api.get('/admin/reports')
+  return data
+}
+
+export async function resolveReport(id: string) {
+  await api.post(`/admin/reports/${id}/resolve`)
 }

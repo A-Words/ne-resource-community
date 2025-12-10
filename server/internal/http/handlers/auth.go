@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/A-Words/ne-resource-community/server/internal/config"
 	"github.com/A-Words/ne-resource-community/server/internal/models"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +32,7 @@ type registerRequest struct {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": humanizeValidation(err)})
 		return
 	}
 
@@ -68,7 +70,7 @@ type loginRequest struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": humanizeValidation(err)})
 		return
 	}
 
@@ -99,4 +101,34 @@ func (h *AuthHandler) issueToken(user models.User) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(h.cfg.JWTSecret))
+}
+
+func humanizeValidation(err error) string {
+	var ve validator.ValidationErrors
+	if errors.As(err, &ve) {
+		for _, fe := range ve {
+			switch fe.Field() {
+			case "Email":
+				switch fe.Tag() {
+				case "required":
+					return "邮箱不能为空"
+				case "email":
+					return "邮箱格式不正确"
+				}
+			case "Password":
+				switch fe.Tag() {
+				case "required":
+					return "密码不能为空"
+				case "min":
+					return "密码长度至少 6 位"
+				}
+			case "DisplayName":
+				switch fe.Tag() {
+				case "required":
+					return "昵称不能为空"
+				}
+			}
+		}
+	}
+	return err.Error()
 }
