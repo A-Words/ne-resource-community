@@ -6,12 +6,14 @@
         <div class="hero-title">聚焦网络工程的高质量资源库</div>
         <div class="hero-sub">工具、配置模板、文档、课程一站式搜索与下载</div>
       </div>
-      <el-input v-model="filters.search" placeholder="关键词 / 协议 / 厂商" clearable @keyup.enter="load">
+      <el-input v-model="filters.search" placeholder="关键词 / 协议 / 厂商" clearable @keyup.enter="handleSearch">
         <template #append>
-          <el-button type="primary" @click="load">搜索</el-button>
+          <el-button type="primary" @click="handleSearch">搜索</el-button>
         </template>
       </el-input>
     </div>
+
+    <TagCloud />
 
     <el-card shadow="never" class="panel">
       <el-tabs v-model="filters.type" @tab-change="load" class="type-tabs">
@@ -70,12 +72,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { fetchResources } from '@/api'
 import type { Resource } from '@/types'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import TagCloud from '@/components/TagCloud.vue'
 
 const router = useRouter()
+const route = useRoute()
 const resources = ref<Resource[]>([])
 
 const filters = reactive({
@@ -91,21 +95,46 @@ async function load() {
   resources.value = await fetchResources({ ...filters })
 }
 
+function handleSearch() {
+  const currentQ = route.query.q || ''
+  if (filters.search !== currentQ) {
+    router.push({ query: { ...route.query, q: filters.search || undefined } })
+  } else {
+    load()
+  }
+}
+
 function reset() {
-  filters.search = ''
   filters.type = ''
   filters.vendor = ''
   filters.device = ''
   filters.protocol = ''
   filters.scenario = ''
-  load()
+  
+  if (route.query.q) {
+    filters.search = ''
+    router.push({ query: { ...route.query, q: undefined } })
+  } else {
+    filters.search = ''
+    load()
+  }
 }
 
 function goDetail(id: string) {
   router.push(`/resources/${id}`)
 }
 
-onMounted(load)
+onMounted(() => {
+  if (route.query.q) {
+    filters.search = route.query.q as string
+  }
+  load()
+})
+
+watch(() => route.query.q, (newVal) => {
+  filters.search = (newVal as string) || ''
+  load()
+})
 </script>
 
 <style scoped>

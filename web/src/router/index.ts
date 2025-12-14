@@ -10,7 +10,7 @@ import AdminReports from '@/pages/AdminReports.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', component: Home },
+    { path: '/', name: 'Home', component: Home },
     { path: '/upload', component: Upload },
     { path: '/auth', component: Auth },
     { path: '/resources/:id', component: ResourceDetail, props: true },

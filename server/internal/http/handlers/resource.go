@@ -205,7 +205,13 @@ func (h *ResourceHandler) List(c *gin.Context) {
 		dbq = dbq.Where("LOWER(tags) LIKE ?", "%"+tag+"%")
 	}
 	if q.Search != "" {
-		dbq = dbq.Where("search_vector @@ websearch_to_tsquery('english', ?)", q.Search)
+		// Split search query by space to support multiple keywords
+		keywords := strings.Fields(q.Search)
+		for _, keyword := range keywords {
+			pattern := "%" + keyword + "%"
+			dbq = dbq.Where("title ILIKE ? OR description ILIKE ? OR tags ILIKE ? OR vendor ILIKE ? OR device_model ILIKE ?",
+				pattern, pattern, pattern, pattern, pattern)
+		}
 	}
 
 	var resources []models.Resource
@@ -552,4 +558,34 @@ func (h *ResourceHandler) AdminResolveReport(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, report)
+}
+
+// GetPopularTags returns a list of popular tags.
+func (h *ResourceHandler) GetPopularTags(c *gin.Context) {
+	type TagResult struct {
+		Tag   string `json:"tag"`
+		Count int64  `json:"count"`
+	}
+	var results []TagResult
+
+	// Postgres specific query for comma separated tags
+	err := h.db.Raw(`
+		SELECT trim(tag) as tag, count(*) as count
+		FROM (
+			SELECT unnest(string_to_array(tags, ',')) as tag
+			FROM resources
+			WHERE status = 'approved' AND tags != ''
+		) t
+		WHERE trim(tag) != ''
+		GROUP BY tag
+		ORDER BY count DESC
+		LIMIT 30
+	`).Scan(&results).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch tags"})
+		return
+	}
+
+	c.JSON(http.StatusOK, results)
 }

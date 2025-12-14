@@ -27,6 +27,7 @@ func NewRouter(db *gorm.DB, cfg config.Config) *gin.Engine {
 
 		resources := api.Group("/resources")
 		resources.GET("", resourceHandler.List)
+		resources.GET("/tags/popular", resourceHandler.GetPopularTags)
 		resources.GET(":id", resourceHandler.Get)
 		resources.GET(":id/recommendations", resourceHandler.Recommend)
 		resources.GET(":id/versions", resourceHandler.GetVersions)

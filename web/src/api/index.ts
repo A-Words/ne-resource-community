@@ -108,3 +108,9 @@ export async function fetchReports(): Promise<any[]> {
 export async function resolveReport(id: string) {
   await api.post(`/admin/reports/${id}/resolve`)
 }
+
+export async function fetchPopularTags(): Promise<{ tag: string; count: number }[]> {
+  const { data } = await api.get<{ tag: string; count: number }[]>('/resources/tags/popular')
+  return data
+}
+
