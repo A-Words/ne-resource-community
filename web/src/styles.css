@@ -39,6 +39,21 @@ a {
   color: var(--text);
 }
 
+.el-table,
+.el-table__expanded-cell {
+  background-color: transparent !important;
+  --el-table-tr-bg-color: transparent !important;
+  --el-table-header-bg-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.el-descriptions__body {
+  background: transparent !important;
+}
+
+.el-descriptions__label {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
 .page-shell {
   max-width: 1200px;
   margin: 0 auto;

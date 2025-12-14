@@ -88,7 +88,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch, computed } from 'vue'
-import { fetchResource, fetchRecommendations, downloadResource, submitReview, toggleFavorite, reportResource, fetchVersions } from '@/api'
+import { fetchResource, fetchRecommendations, downloadResource, submitReview as apiSubmitReview, toggleFavorite, reportResource, fetchVersions } from '@/api'
 import type { Resource } from '@/types'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -155,7 +155,7 @@ async function toggleFav() {
 async function submitReview() {
   if (!resource.value) return
   try {
-    await submitReview(resource.value.id, { ...review })
+    await apiSubmitReview(resource.value.id, { ...review })
     ElMessage.success('感谢反馈')
   } catch (err: any) {
     ElMessage.error(err?.response?.data?.error || '提交失败')

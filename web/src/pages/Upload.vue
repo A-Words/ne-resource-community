@@ -45,7 +45,7 @@
 
         <el-form-item label="文件" v-if="sourceType === 'file'">
           <el-upload drag :auto-upload="false" :on-change="onFileChange" accept="*/*">
-            <i class="el-icon-upload" />
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖拽或点击上传文件</div>
           </el-upload>
           <div v-if="form.file" class="file-name">{{ form.file.name }}</div>
@@ -68,6 +68,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { uploadResource } from '@/api'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { UploadFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
