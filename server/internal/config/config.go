@@ -7,11 +7,12 @@ import (
 
 // Config holds server configuration loaded from environment variables.
 type Config struct {
-	Addr       string
+	Addr        string
 	DatabaseDSN string
-	JWTSecret  string
-	UploadDir  string
-	Env        string
+	JWTSecret   string
+	UploadDir   string
+	Env         string
+	ClamAVAddr  string
 }
 
 // Load builds Config with sensible defaults; environment variables can override them.
@@ -22,6 +23,7 @@ func Load() Config {
 		JWTSecret:   getEnv("JWT_SECRET", "dev-secret-change-me"),
 		UploadDir:   getEnv("UPLOAD_DIR", "uploads"),
 		Env:         getEnv("ENV", "dev"),
+		ClamAVAddr:  getEnv("CLAMAV_ADDR", "tcp://localhost:3310"),
 	}
 
 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {

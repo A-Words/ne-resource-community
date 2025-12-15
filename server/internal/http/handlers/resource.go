@@ -12,6 +12,7 @@ import (
 	"github.com/A-Words/ne-resource-community/server/internal/config"
 	"github.com/A-Words/ne-resource-community/server/internal/http/middleware"
 	"github.com/A-Words/ne-resource-community/server/internal/models"
+	"github.com/A-Words/ne-resource-community/server/internal/scanner"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -19,12 +20,24 @@ import (
 
 // ResourceHandler manages resource CRUD and search.
 type ResourceHandler struct {
-	db  *gorm.DB
-	cfg config.Config
+	db      *gorm.DB
+	cfg     config.Config
+	scanner scanner.Scanner
 }
 
 func NewResourceHandler(db *gorm.DB, cfg config.Config) *ResourceHandler {
-	return &ResourceHandler{db: db, cfg: cfg}
+	var s scanner.Scanner
+	var err error
+	if cfg.ClamAVAddr != "" {
+		s, err = scanner.NewClamAVScanner(cfg.ClamAVAddr)
+		if err != nil {
+			fmt.Printf("Failed to init ClamAV: %v. Virus scanning disabled.\n", err)
+			s = &scanner.NoOpScanner{}
+		}
+	} else {
+		s = &scanner.NoOpScanner{}
+	}
+	return &ResourceHandler{db: db, cfg: cfg, scanner: s}
 }
 
 type resourceCreateReq struct {
@@ -87,6 +100,27 @@ func (h *ResourceHandler) Create(c *gin.Context) {
 			return
 		}
 		defer src.Close()
+
+		// Virus Scan
+		safe, threat, err := h.scanner.Scan(src)
+		if err != nil {
+			// Log the error but maybe don't block upload if scanner is down?
+			// For security, we should probably block.
+			// But since we have NoOpScanner fallback in NewResourceHandler, this error here means
+			// the scanner was initialized but failed during scan (e.g. connection lost).
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "virus scan failed"})
+			return
+		}
+		if !safe {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("virus detected: %s", threat)})
+			return
+		}
+
+		// Reset file pointer
+		if _, err := src.Seek(0, 0); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reset file pointer"})
+			return
+		}
 
 		hash := sha256.New()
 		if _, err := io.Copy(hash, src); err != nil {
