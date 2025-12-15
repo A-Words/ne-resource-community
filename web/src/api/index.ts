@@ -100,6 +100,10 @@ export async function auditResource(id: string, action: 'approve' | 'reject', re
   await api.post(`/admin/resources/${id}/audit`, { action, reason })
 }
 
+export async function changePassword(oldPassword: string, newPassword: string) {
+  await api.post('/user/change-password', { oldPassword, newPassword })
+}
+
 export async function fetchReports(): Promise<any[]> {
   const { data } = await api.get('/admin/reports')
   return data

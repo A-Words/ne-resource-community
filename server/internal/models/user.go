@@ -16,6 +16,7 @@ type User struct {
 	DisplayName  string    `gorm:"size:255" json:"displayName"`
 	Role         string    `gorm:"size:32;default:user" json:"role"`
 	Points       int       `gorm:"default:0" json:"points"`
+	Level        int       `gorm:"-" json:"level"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
@@ -24,7 +25,17 @@ func (u *User) BeforeCreate(_ *gorm.DB) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
 	}
+	u.CalculateLevel()
 	return nil
+}
+
+func (u *User) AfterFind(_ *gorm.DB) error {
+	u.CalculateLevel()
+	return nil
+}
+
+func (u *User) CalculateLevel() {
+	u.Level = 1 + u.Points/100
 }
 
 // SetPassword hashes and stores password.

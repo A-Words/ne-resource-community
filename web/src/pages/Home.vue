@@ -15,59 +15,66 @@
 
     <TagCloud />
 
-    <el-card shadow="never" class="panel">
-      <el-tabs v-model="filters.type" @tab-change="load" class="type-tabs">
-        <el-tab-pane label="全部资源" name="" />
-        <el-tab-pane label="网络工具" name="网络工具" />
-        <el-tab-pane label="配置模板" name="配置模板" />
-        <el-tab-pane label="文档资料" name="文档资料" />
-        <el-tab-pane label="学习资源" name="学习资源" />
-      </el-tabs>
+    <el-row :gutter="20" style="margin-top: 20px;">
+      <el-col :span="18">
+        <el-card shadow="never" class="panel">
+          <el-tabs v-model="filters.type" @tab-change="load" class="type-tabs">
+            <el-tab-pane label="全部资源" name="" />
+            <el-tab-pane label="网络工具" name="网络工具" />
+            <el-tab-pane label="配置模板" name="配置模板" />
+            <el-tab-pane label="文档资料" name="文档资料" />
+            <el-tab-pane label="学习资源" name="学习资源" />
+          </el-tabs>
 
-      <el-form inline :model="filters" label-width="80px" class="filters">
-        <template v-if="filters.type !== '网络工具'">
-          <el-form-item label="厂商">
-            <el-input v-model="filters.vendor" placeholder="如 Cisco / Huawei" clearable />
-          </el-form-item>
-          <el-form-item label="设备型号">
-            <el-input v-model="filters.device" placeholder="如 AR / ASR" clearable />
-          </el-form-item>
-          <el-form-item label="协议">
-            <el-input v-model="filters.protocol" placeholder="BGP / OSPF / VXLAN" clearable />
-          </el-form-item>
-          <el-form-item label="场景">
-            <el-input v-model="filters.scenario" placeholder="数据中心 / 骨干" clearable />
-          </el-form-item>
-        </template>
-        <el-form-item>
-          <el-button type="primary" @click="load">筛选</el-button>
-          <el-button @click="reset">重置</el-button>
-        </el-form-item>
-      </el-form>
+          <el-form inline :model="filters" label-width="80px" class="filters">
+            <template v-if="filters.type !== '网络工具'">
+              <el-form-item label="厂商">
+                <el-input v-model="filters.vendor" placeholder="如 Cisco / Huawei" clearable />
+              </el-form-item>
+              <el-form-item label="设备型号">
+                <el-input v-model="filters.device" placeholder="如 AR / ASR" clearable />
+              </el-form-item>
+              <el-form-item label="协议">
+                <el-input v-model="filters.protocol" placeholder="BGP / OSPF / VXLAN" clearable />
+              </el-form-item>
+              <el-form-item label="场景">
+                <el-input v-model="filters.scenario" placeholder="数据中心 / 骨干" clearable />
+              </el-form-item>
+            </template>
+            <el-form-item>
+              <el-button type="primary" @click="load">筛选</el-button>
+              <el-button @click="reset">重置</el-button>
+            </el-form-item>
+          </el-form>
 
-      <el-row :gutter="16">
-        <el-col v-for="item in resources" :key="item.id" :xs="24" :sm="12" :md="8">
-          <el-card class="res-card" shadow="hover">
-            <div class="card-header">
-              <div class="title">{{ item.title }}</div>
-              <el-tag size="small" type="info">{{ item.type }}</el-tag>
-            </div>
-            <div class="meta">{{ item.vendor }} {{ item.deviceModel }}</div>
-            <div class="desc">{{ item.description || '暂无描述' }}</div>
-            <div class="footer">
-              <div class="tags">{{ item.tags }}</div>
-              <div class="stats">
-                <el-rate :model-value="item.ratingAverage" disabled allow-half />
-                <span>{{ item.downloadCount }} 下载</span>
-              </div>
-            </div>
-            <div class="actions">
-              <el-button link type="primary" @click="goDetail(item.id)">查看</el-button>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </el-card>
+          <el-row :gutter="16">
+            <el-col v-for="item in resources" :key="item.id" :xs="24" :sm="12" :md="8">
+              <el-card class="res-card" shadow="hover">
+                <div class="card-header">
+                  <div class="title">{{ item.title }}</div>
+                  <el-tag size="small" type="info">{{ item.type }}</el-tag>
+                </div>
+                <div class="meta">{{ item.vendor }} {{ item.deviceModel }}</div>
+                <div class="desc">{{ item.description || '暂无描述' }}</div>
+                <div class="footer">
+                  <div class="tags">{{ item.tags }}</div>
+                  <div class="stats">
+                    <el-rate :model-value="item.ratingAverage" disabled allow-half />
+                    <span>{{ item.downloadCount }} 下载</span>
+                  </div>
+                </div>
+                <div class="actions">
+                  <el-button link type="primary" @click="goDetail(item.id)">查看</el-button>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <RankingList class="panel" />
+      </el-col>
+    </el-row>
   </div>
 </template>
 
@@ -77,6 +84,7 @@ import { fetchResources } from '@/api'
 import type { Resource } from '@/types'
 import { useRouter, useRoute } from 'vue-router'
 import TagCloud from '@/components/TagCloud.vue'
+import RankingList from '@/components/RankingList.vue'
 
 const router = useRouter()
 const route = useRoute()

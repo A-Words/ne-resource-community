@@ -5,18 +5,28 @@
       <div class="nav-actions">
         <RouterLink to="/">资源广场</RouterLink>
         <RouterLink to="/upload">上传资源</RouterLink>
-        <RouterLink to="/dashboard">个人空间</RouterLink>
-        <template v-if="userStore.profile?.role === 'admin'">
-          <RouterLink to="/admin/audit">审核后台</RouterLink>
-          <RouterLink to="/admin/reports">举报处理</RouterLink>
-        </template>
       </div>
       <div class="user-area">
         <el-button v-if="!userStore.isAuthed" type="primary" @click="router.push('/auth')">登录 / 注册</el-button>
-        <div v-else class="user-tag">
-          <span>{{ userStore.profile?.displayName }}</span>
-          <el-button link type="danger" @click="userStore.logout">退出</el-button>
-        </div>
+        <el-dropdown v-else trigger="click" @command="handleCommand">
+          <div class="user-tag">
+            <el-avatar :size="32" :icon="UserFilled" class="user-avatar" />
+            <span class="user-name">{{ userStore.profile?.displayName }}</span>
+            <el-tag size="small" type="warning" effect="dark" round>Lv.{{ userStore.profile?.level || 1 }}</el-tag>
+            <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="/dashboard" :icon="DataLine">个人空间</el-dropdown-item>
+              <el-dropdown-item command="/dashboard?tab=security" :icon="Lock">安全设置</el-dropdown-item>
+              <template v-if="userStore.profile?.role === 'admin'">
+                <el-dropdown-item command="/admin/audit" :icon="Monitor">审核后台</el-dropdown-item>
+                <el-dropdown-item command="/admin/reports" :icon="Monitor">举报处理</el-dropdown-item>
+              </template>
+              <el-dropdown-item divided command="logout" :icon="SwitchButton">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </el-header>
     <el-main>
@@ -28,9 +38,19 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useUserStore } from './stores/user'
+import { ArrowDown, UserFilled, SwitchButton, DataLine, Monitor, Lock } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
+
+const handleCommand = (command: string) => {
+  if (command === 'logout') {
+    userStore.logout()
+    router.push('/auth')
+  } else {
+    router.push(command)
+  }
+}
 </script>
 
 <style scoped>
@@ -71,5 +91,20 @@ const router = useRouter()
   display: flex;
   gap: 8px;
   align-items: center;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+.user-tag:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.user-name {
+  font-weight: 600;
+  color: var(--text);
+}
+.user-avatar {
+  background: var(--accent);
+  color: #0f172a;
 }
 </style>

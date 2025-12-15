@@ -37,6 +37,22 @@
                 </el-table-column>
               </el-table>
             </el-tab-pane>
+            <el-tab-pane label="安全设置" name="security">
+              <el-form :model="passwordForm" label-width="100px" style="max-width: 400px">
+                <el-form-item label="当前密码">
+                  <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+                </el-form-item>
+                <el-form-item label="新密码">
+                  <el-input v-model="passwordForm.newPassword" type="password" show-password />
+                </el-form-item>
+                <el-form-item label="确认新密码">
+                  <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="handleChangePassword">修改密码</el-button>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
           </el-tabs>
         </el-card>
       </el-col>
@@ -48,17 +64,24 @@
 import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
-import { fetchFavorites, fetchDownloads } from '@/api'
+import { fetchFavorites, fetchDownloads, changePassword } from '@/api'
 import type { Resource } from '@/types'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const userStore = useUserStore()
 const { profile } = storeToRefs(userStore)
 const router = useRouter()
+const route = useRoute()
 
-const activeTab = ref('favorites')
+const activeTab = ref(route.query.tab as string || 'favorites')
 const favorites = ref<Resource[]>([])
 const downloads = ref<Resource[]>([])
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
 
 onMounted(async () => {
   favorites.value = await fetchFavorites()
@@ -67,6 +90,28 @@ onMounted(async () => {
 
 function goDetail(id: string) {
   router.push(`/resource/${id}`)
+}
+
+async function handleChangePassword() {
+  if (!passwordForm.value.oldPassword || !passwordForm.value.newPassword) {
+    ElMessage.error('请填写完整')
+    return
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    ElMessage.error('两次输入的密码不一致')
+    return
+  }
+  if (passwordForm.value.newPassword.length < 6) {
+    ElMessage.error('新密码长度不能少于6位')
+    return
+  }
+  try {
+    await changePassword(passwordForm.value.oldPassword, passwordForm.value.newPassword)
+    ElMessage.success('密码修改成功')
+    passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.error || '修改失败')
+  }
 }
 </script>
 

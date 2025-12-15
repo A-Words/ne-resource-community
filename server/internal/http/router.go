@@ -42,6 +42,7 @@ func NewRouter(db *gorm.DB, cfg config.Config) *gin.Engine {
 
 		user := api.Group("/user")
 		user.Use(middleware.AuthMiddleware(cfg))
+		user.POST("/change-password", authHandler.ChangePassword)
 		user.GET("/favorites", resourceHandler.ListFavorites)
 		user.GET("/downloads", resourceHandler.ListDownloads)
 

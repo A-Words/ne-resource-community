@@ -4,6 +4,7 @@ export interface UserProfile {
   displayName: string
   role: string
   points: number
+  level: number
 }
 
 export interface Resource {

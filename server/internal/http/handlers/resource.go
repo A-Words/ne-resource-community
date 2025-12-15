@@ -166,6 +166,7 @@ type resourceQuery struct {
 	Protocol string `form:"protocol"`
 	Scenario string `form:"scenario"`
 	Tag      string `form:"tag"`
+	Sort     string `form:"sort"` // "newest", "downloads"
 	Limit    int    `form:"limit,default=20"`
 	Offset   int    `form:"offset,default=0"`
 }
@@ -180,9 +181,15 @@ func (h *ResourceHandler) List(c *gin.Context) {
 
 	dbq := h.db.Model(&models.Resource{}).
 		Preload("Uploader").
-		Where("status = ?", "approved"). // Only show approved resources
-		Order("created_at DESC").
-		Limit(q.Limit).
+		Where("status = ?", "approved") // Only show approved resources
+
+	if q.Sort == "downloads" {
+		dbq = dbq.Order("download_count DESC")
+	} else {
+		dbq = dbq.Order("created_at DESC")
+	}
+
+	dbq = dbq.Limit(q.Limit).
 		Offset(q.Offset)
 
 	if q.Type != "" {
