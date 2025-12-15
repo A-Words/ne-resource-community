@@ -38,13 +38,29 @@
             </el-table-column>
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="scope">
-                <el-button link type="primary" :disabled="scope.row.status !== 'open'">查看</el-button>
+                <el-button link type="primary" :disabled="scope.row.status !== 'open'" @click="handleView(scope.row)">查看</el-button>
               </template>
             </el-table-column>
           </el-table>
         </el-card>
       </el-col>
     </el-row>
+
+    <el-dialog v-model="showDetail" :title="currentRequest?.title" width="600px" class="request-dialog">
+      <div v-if="currentRequest">
+        <div class="detail-meta">
+          <el-tag size="small" effect="dark" type="warning">{{ currentRequest.bounty }} 积分</el-tag>
+          <span class="muted">发布于 {{ new Date(currentRequest.createdAt).toLocaleString() }}</span>
+          <span class="muted">by {{ currentRequest.user?.displayName }}</span>
+        </div>
+        <div class="detail-desc">
+          {{ currentRequest.description }}
+        </div>
+        <div class="detail-actions">
+          <el-alert title="暂未开放回答功能，请联系管理员或私信发布者" type="info" :closable="false" show-icon />
+        </div>
+      </div>
+    </el-dialog>
 
     <el-dialog v-model="showCreate" title="发布求助" width="500px" class="request-dialog">
       <el-form :model="form" label-position="top">
@@ -85,6 +101,8 @@ import type { Request } from '@/types'
 const userStore = useUserStore()
 const requests = ref<Request[]>([])
 const showCreate = ref(false)
+const showDetail = ref(false)
+const currentRequest = ref<Request | null>(null)
 const submitting = ref(false)
 
 const form = reactive({
@@ -94,6 +112,11 @@ const form = reactive({
 })
 
 onMounted(loadRequests)
+
+function handleView(req: Request) {
+  currentRequest.value = req
+  showDetail.value = true
+}
 
 async function loadRequests() {
   try {
@@ -174,16 +197,26 @@ async function handleCreate() {
   border-radius: 4px;
   border: 1px solid var(--border);
 }
-.balance-info .label {
-  color: var(--muted);
-}
-.balance-info .value {
-  color: var(--accent);
-  font-weight: 600;
-}
 .form-tip {
   font-size: 12px;
   color: var(--muted);
   margin-top: 6px;
+}
+.detail-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.detail-desc {
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
 }
 </style>
