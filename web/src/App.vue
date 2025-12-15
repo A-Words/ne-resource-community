@@ -4,6 +4,7 @@
       <div class="logo">NE Resource</div>
       <div class="nav-actions">
         <RouterLink to="/">资源广场</RouterLink>
+        <RouterLink to="/requests">求助悬赏</RouterLink>
         <RouterLink to="/upload">上传资源</RouterLink>
       </div>
       <div class="user-area">

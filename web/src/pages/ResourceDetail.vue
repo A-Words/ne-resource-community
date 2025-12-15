@@ -58,6 +58,26 @@
       </el-col>
 
       <el-col :md="8" :xs="24">
+        <el-card shadow="never" style="margin-bottom: 12px" v-if="userStore.isAuthed">
+          <h4>学习进度</h4>
+          <div class="progress-box">
+            <el-progress :percentage="learningProgress.progress" />
+            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center">
+              <el-radio-group v-model="learningProgress.status" size="small" @change="saveProgress">
+                <el-radio-button label="started">进行中</el-radio-button>
+                <el-radio-button label="completed">已完成</el-radio-button>
+              </el-radio-group>
+              <el-input-number 
+                v-model="learningProgress.progress" 
+                :min="0" :max="100" 
+                size="small" 
+                style="width: 100px"
+                @change="saveProgress" 
+              />
+            </div>
+          </div>
+        </el-card>
+
         <el-card shadow="never">
           <h4>相似推荐</h4>
           <el-skeleton v-if="loadingRecommend" :rows="3" animated />
@@ -88,7 +108,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch, computed } from 'vue'
-import { fetchResource, fetchRecommendations, downloadResource, submitReview as apiSubmitReview, toggleFavorite, reportResource, fetchVersions } from '@/api'
+import { fetchResource, fetchRecommendations, downloadResource, submitReview as apiSubmitReview, toggleFavorite, reportResource, fetchVersions, fetchProgress, updateProgress } from '@/api'
 import type { Resource } from '@/types'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -98,6 +118,29 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const resource = ref<Resource | null>(null)
+const learningProgress = reactive({
+  progress: 0,
+  status: 'not_started'
+})
+
+watch(() => resource.value, async (val) => {
+  if (val && userStore.isAuthed) {
+    try {
+      const res = await fetchProgress(val.id)
+      if (res) {
+        learningProgress.progress = res.progress
+        learningProgress.status = res.status || 'started'
+      }
+    } catch (e) {
+      // ignore error if progress not found or failed
+    }
+  }
+})
+
+async function saveProgress() {
+  if (!resource.value) return
+  await updateProgress(resource.value.id, learningProgress.progress, learningProgress.status)
+}
 const recommendations = ref<Resource[]>([])
 const versions = ref<Resource[]>([])
 const loadingRecommend = ref(false)

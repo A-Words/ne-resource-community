@@ -6,6 +6,7 @@ import ResourceDetail from '@/pages/ResourceDetail.vue'
 import Dashboard from '@/pages/Dashboard.vue'
 import AdminAudit from '@/pages/AdminAudit.vue'
 import AdminReports from '@/pages/AdminReports.vue'
+import Requests from '@/pages/Requests.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +16,7 @@ const router = createRouter({
     { path: '/auth', component: Auth },
     { path: '/resources/:id', component: ResourceDetail, props: true },
     { path: '/dashboard', component: Dashboard },
+    { path: '/requests', component: Requests },
     { path: '/admin/audit', component: AdminAudit },
     { path: '/admin/reports', component: AdminReports },
   ],

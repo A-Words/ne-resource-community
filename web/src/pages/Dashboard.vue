@@ -37,6 +37,25 @@
                 </el-table-column>
               </el-table>
             </el-tab-pane>
+            <el-tab-pane label="我的上传" name="uploads">
+              <el-empty v-if="uploads.length === 0" description="暂无上传记录" />
+              <el-table v-else :data="uploads" style="width: 100%">
+                <el-table-column prop="title" label="标题" />
+                <el-table-column prop="type" label="类型" width="100" />
+                <el-table-column prop="status" label="状态" width="100">
+                  <template #default="scope">
+                    <el-tag :type="scope.row.status === 'approved' ? 'success' : scope.row.status === 'rejected' ? 'danger' : 'warning'">
+                      {{ scope.row.status === 'approved' ? '已通过' : scope.row.status === 'rejected' ? '已拒绝' : '审核中' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                  <template #default="scope">
+                    <el-button link type="primary" @click="goDetail(scope.row.id)">查看</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </el-tab-pane>
             <el-tab-pane label="安全设置" name="security">
               <el-form :model="passwordForm" label-width="100px" style="max-width: 400px">
                 <el-form-item label="当前密码">
@@ -64,7 +83,7 @@
 import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/stores/user'
-import { fetchFavorites, fetchDownloads, changePassword } from '@/api'
+import { fetchFavorites, fetchDownloads, fetchMyUploads, changePassword } from '@/api'
 import type { Resource } from '@/types'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -77,6 +96,7 @@ const route = useRoute()
 const activeTab = ref(route.query.tab as string || 'favorites')
 const favorites = ref<Resource[]>([])
 const downloads = ref<Resource[]>([])
+const uploads = ref<Resource[]>([])
 const passwordForm = ref({
   oldPassword: '',
   newPassword: '',
@@ -86,6 +106,7 @@ const passwordForm = ref({
 onMounted(async () => {
   favorites.value = await fetchFavorites()
   downloads.value = await fetchDownloads()
+  uploads.value = await fetchMyUploads()
 })
 
 function goDetail(id: string) {

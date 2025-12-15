@@ -87,6 +87,11 @@ export async function fetchDownloads(): Promise<Resource[]> {
   return data
 }
 
+export async function fetchMyUploads(): Promise<Resource[]> {
+  const { data } = await api.get<Resource[]>('/user/uploads')
+  return data
+}
+
 export async function reportResource(id: string, reason: string) {
   await api.post(`/resources/${id}/report`, { reason })
 }
@@ -111,6 +116,26 @@ export async function fetchReports(): Promise<any[]> {
 
 export async function resolveReport(id: string) {
   await api.post(`/admin/reports/${id}/resolve`)
+}
+
+export async function fetchRequests(): Promise<any[]> {
+  const { data } = await api.get('/requests')
+  return data
+}
+
+export async function createRequest(payload: { title: string; description: string; bounty: number }): Promise<any> {
+  const { data } = await api.post('/requests', payload)
+  return data
+}
+
+export async function updateProgress(id: string, progress: number, status: string): Promise<any> {
+  const { data } = await api.post(`/resources/${id}/progress`, { progress, status })
+  return data
+}
+
+export async function fetchProgress(id: string): Promise<any> {
+  const { data } = await api.get(`/resources/${id}/progress`)
+  return data
 }
 
 export async function fetchPopularTags(): Promise<{ tag: string; count: number }[]> {

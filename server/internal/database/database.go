@@ -38,6 +38,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Favorite{},
 		&models.DownloadLog{},
 		&models.Report{},
+		&models.Request{},
+		&models.LearningProgress{},
 	); err != nil {
 		return fmt.Errorf("automigrate: %w", err)
 	}

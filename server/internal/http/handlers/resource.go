@@ -596,3 +596,85 @@ func (h *ResourceHandler) GetPopularTags(c *gin.Context) {
 
 	c.JSON(http.StatusOK, results)
 }
+
+// ListMyUploads returns resources uploaded by the current user.
+func (h *ResourceHandler) ListMyUploads(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var resources []models.Resource
+	if err := h.db.Where("uploader_id = ?", userID).Order("created_at DESC").Find(&resources).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, resources)
+}
+
+type progressReq struct {
+	Progress int    `json:"progress"`
+	Status   string `json:"status"`
+}
+
+func (h *ResourceHandler) UpdateProgress(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	resourceID := c.Param("id")
+
+	var req progressReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var progress models.LearningProgress
+	err := h.db.Where("user_id = ? AND resource_id = ?", userID, resourceID).First(&progress).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			progress = models.LearningProgress{
+				UserID:     userID,
+				ResourceID: uuid.MustParse(resourceID),
+			}
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+			return
+		}
+	}
+
+	progress.Progress = req.Progress
+	progress.Status = req.Status
+
+	if err := h.db.Save(&progress).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save progress"})
+		return
+	}
+
+	c.JSON(http.StatusOK, progress)
+}
+
+func (h *ResourceHandler) GetProgress(c *gin.Context) {
+	userID, ok := middleware.UserID(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	resourceID := c.Param("id")
+
+	var progress models.LearningProgress
+	if err := h.db.Where("user_id = ? AND resource_id = ?", userID, resourceID).First(&progress).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusOK, gin.H{"progress": 0, "status": "not_started"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, progress)
+}

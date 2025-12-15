@@ -49,5 +49,17 @@ export interface ResourcePayload {
 
 export interface ReviewPayload {
   score: number
-  comment?: string
+  comment: string
+}
+
+export interface Request {
+  id: string
+  title: string
+  description: string
+  bounty: number
+  status: string
+  userId: string
+  user?: UserProfile
+  createdAt: string
+  updatedAt: string
 }

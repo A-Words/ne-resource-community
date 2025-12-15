@@ -16,6 +16,7 @@ func NewRouter(db *gorm.DB, cfg config.Config) *gin.Engine {
 
 	authHandler := handlers.NewAuthHandler(db, cfg)
 	resourceHandler := handlers.NewResourceHandler(db, cfg)
+	requestHandler := handlers.NewRequestHandler(db, cfg)
 
 	api := r.Group("/api")
 	{
@@ -39,12 +40,15 @@ func NewRouter(db *gorm.DB, cfg config.Config) *gin.Engine {
 		protected.POST(":id/favorite", resourceHandler.ToggleFavorite)
 		protected.POST(":id/report", resourceHandler.ReportResource)
 		protected.GET(":id/download", resourceHandler.Download)
+		protected.POST(":id/progress", resourceHandler.UpdateProgress)
+		protected.GET(":id/progress", resourceHandler.GetProgress)
 
 		user := api.Group("/user")
 		user.Use(middleware.AuthMiddleware(cfg))
 		user.POST("/change-password", authHandler.ChangePassword)
 		user.GET("/favorites", resourceHandler.ListFavorites)
 		user.GET("/downloads", resourceHandler.ListDownloads)
+		user.GET("/uploads", resourceHandler.ListMyUploads)
 
 		// Admin routes (simplified, reusing auth middleware but should check role)
 		admin := api.Group("/admin")
@@ -53,6 +57,10 @@ func NewRouter(db *gorm.DB, cfg config.Config) *gin.Engine {
 		admin.POST("/resources/:id/audit", resourceHandler.AdminAuditResource)
 		admin.GET("/reports", resourceHandler.AdminListReports)
 		admin.POST("/reports/:id/resolve", resourceHandler.AdminResolveReport)
+
+		requests := api.Group("/requests")
+		requests.GET("", requestHandler.List)
+		requests.POST("", middleware.AuthMiddleware(cfg), requestHandler.Create)
 	}
 
 	// Serve uploaded files statically for previews.
